@@ -1,6 +1,6 @@
-google-generativeai==0.8.4
-python-dotenv==1.0.0
-tavily-python==0.3.3
-huggingface_hub==0.22.2
-transformers==4.40.1
+google-generativeai
+python-dotenv
+tavily-python
+huggingface_hub
+transformers
 torch
