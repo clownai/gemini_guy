@@ -58,15 +58,16 @@ npm start
 - Chat with Gemini AI
 - Web search using Tavily
 - Hugging Face model search
+- Text summarization
 
-### Hugging Face Search
-- Click the "HF Search" button in the sidebar
-- Enter a search query for Hugging Face models
-- View model details like downloads and last modified date
+### Hugging Face Capabilities
+- **Model Search:** Click the "HF Search" button to find models on Hugging Face Hub
+- **Text Summarization:** Use `/summarize <text>` to generate concise summaries
 
 ### Commands
 - `/search <query>`: Web search
 - `/hf_search <query>`: Hugging Face model search
+- `/summarize <text>`: Summarize text using a Hugging Face model
 - `/read <filename>`: Read file contents
 - `/write <filename> <prompt>`: Generate and write content
 - `/append <filename> <prompt>`: Append generated content

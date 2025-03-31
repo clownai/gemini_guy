@@ -142,16 +142,15 @@ function clearChat() {
 }
 
 function showHelp() {
-    console.log('Showing help.');
-    const helpText = `Available Commands:\n` +
-                     `  /clear                - Clears the chat window display.\n` +
-                     `  /help                 - Shows this help message.\n` +
-                     `  /read <filename>      - Reads project file content for discussion.\n` +
+    const helpText = "Available Commands:\n" +
+                     `  /help            - Show this help message.\n` +
+                     `  /clear           - Clear the chat window.\n` +
                      `  /search <query>       - Performs a web search via Tavily.\n` +
-                     `  /write <file> <prompt> - Generates content using the prompt and writes it to the file (overwrites).\n` +
-                     `  /append <file> <prompt>- Generates content using the prompt and appends it to the file.\n` +
-                     `  quit | exit | bye     - Saves history and closes the backend connection.`;
-    addInfoMessage(helpText); // Display help text in the chat
+                     `  /summarize <text>     - Summarizes the provided text using a Hugging Face model.\n` +
+                     `  /write <file> <prompt> - Generates content and writes to file.\n` +
+                     `  /append <file> <prompt>- Generates content and appends to file.\n` +
+                     `  quit, exit, bye  - Close the application.\n`;
+    addInfoMessage(helpText);
 }
 
 // Modify sendMessage function

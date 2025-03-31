@@ -6,6 +6,7 @@ from datetime import datetime
 from tavily import TavilyClient
 from dotenv import load_dotenv
 from huggingface_hub import HfApi, hf_hub_download
+from transformers import pipeline
 
 # Load API key from .env file
 def load_api_key():
@@ -30,17 +31,17 @@ try:
         raise ValueError("GOOGLE_API_KEY not found. Check .env file.")
     
     genai.configure(api_key=google_api_key)
-    print("🔑 Google API Key configured successfully.", file=sys.stderr, flush=True)
+    print(" Google API Key configured successfully.", file=sys.stderr, flush=True)
     
     if tavily_api_key:
-        print("🔑 Tavily API Key loaded.", file=sys.stderr, flush=True)
+        print(" Tavily API Key loaded.", file=sys.stderr, flush=True)
     else:
-        print("⚠️ Tavily API Key (TAVILY_API_KEY) not found in .env. /search command will be disabled.", file=sys.stderr, flush=True)
+        print(" Tavily API Key (TAVILY_API_KEY) not found in .env. /search command will be disabled.", file=sys.stderr, flush=True)
 
     if huggingface_token:
-        print("🔑 Hugging Face Token loaded.", file=sys.stderr, flush=True)
+        print(" Hugging Face Token loaded.", file=sys.stderr, flush=True)
     else:
-        print("⚠️ Hugging Face Token not found. HF features disabled.", file=sys.stderr, flush=True)
+        print(" Hugging Face Token not found. HF features disabled.", file=sys.stderr, flush=True)
 
 except Exception as e:
     print(f"Configuration error: {e}", file=sys.stderr)
@@ -77,6 +78,33 @@ initial_history = [
 
 # Conversation tracking
 conversation_history = initial_history.copy()
+
+# --- Hugging Face Summarization ---
+# Initialize pipeline globally or cache it for efficiency, but load on demand first
+summarizer = None
+
+def summarize_with_huggingface(text_to_summarize):
+    """Summarizes text using a Hugging Face model."""
+    global summarizer # Allow modification of the global variable
+    try:
+        if summarizer is None:
+            print("[Initializing HF Summarizer Model... This might take a moment]", file=sys.stderr, flush=True)
+            # Load a standard summarization model
+            summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+            print("[HF Summarizer Initialized]", file=sys.stderr, flush=True)
+
+        # Perform summarization (adjust max/min length as needed)
+        summary = summarizer(text_to_summarize, max_length=150, min_length=30, do_sample=False)
+
+        if summary and isinstance(summary, list) and 'summary_text' in summary[0]:
+            return f"Hugging Face Summary:\n{summary[0]['summary_text']}"
+        else:
+            return "Error: Could not generate summary from Hugging Face model."
+
+    except Exception as e:
+        print(f"Error during Hugging Face summarization: {e}", file=sys.stderr, flush=True)
+        return f"Error performing Hugging Face summarization: {e}"
+# --------------------------------
 
 def search_huggingface_hub(query, token):
     """Searches the Hugging Face Hub for models and returns formatted results."""
@@ -174,7 +202,7 @@ def main():
                     })
 
                 except Exception as search_e:
-                    print(f"\n❌ Error during web search: {search_e}", flush=True)
+                    print(f"\n Error during web search: {search_e}", flush=True)
                     continue
 
             # Handle HF search command
@@ -211,7 +239,44 @@ def main():
                     })
 
                 except Exception as search_e:
-                    print(f"\n❌ Error during HF search: {search_e}", flush=True)
+                    print(f"\n Error during HF search: {search_e}", flush=True)
+                    continue
+
+            # Handle HF summarize command
+            elif user_input.lower().startswith('/hf_summarize '):
+                if not huggingface_token:
+                    print("Gemini Guy: Error: HUGGINGFACE_TOKEN not found in .env file. Cannot perform HF summarization.", flush=True)
+                    continue
+
+                try:
+                    parts = user_input.split(' ', 1)
+                    text_to_summarize = parts[1].strip() if len(parts) > 1 else None
+
+                    if not text_to_summarize:
+                        print("Gemini Guy: Please provide text to summarize after /hf_summarize.", flush=True)
+                        continue
+
+                    print(f"Gemini Guy [Summarizing text via HF]: ", end="", flush=True)
+
+                    # Call HF summarization function
+                    summary_result = summarize_with_huggingface(text_to_summarize)
+                    
+                    # Extract and print the text response
+                    print(summary_result)
+                    sys.stdout.flush()
+
+                    # Append to conversation history
+                    conversation_history.append({
+                        'role': 'user',
+                        'parts': [user_input]
+                    })
+                    conversation_history.append({
+                        'role': 'model',
+                        'parts': [summary_result]
+                    })
+
+                except Exception as search_e:
+                    print(f"\n Error during HF summarization: {search_e}", flush=True)
                     continue
 
             # Append user input to conversation history

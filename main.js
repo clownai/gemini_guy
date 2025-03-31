@@ -389,6 +389,37 @@ ipcMain.on('send-to-gemini', async (event, message) => {
         // --- End spawn generate_once.py ---
     } // End if startsWith /write or /append
 
+    // --- Check for /summarize command ---
+    else if (commandText.startsWith('/summarize ')) {
+        handledLocally = true;
+        const textToSummarize = message.trim().substring('/summarize '.length).trim();
+
+        if (!textToSummarize) {
+            mainWindow?.webContents.send('gemini-error', 'Error: Please provide text after /summarize to be summarized.');
+            return;
+        }
+
+        console.log(`Main: Requesting HF Summarization for text.`);
+        mainWindow?.webContents.send('file-write-status', `⏳ Requesting summary from Hugging Face model...`);
+
+        // Send the special command prefix + text to Python
+        if (pythonProcess && pythonProcess.stdin && !pythonProcess.stdin.destroyed) {
+            try {
+                const commandForPython = `HF_SUMMARIZE:::${textToSummarize}\n`;
+                pythonProcess.stdin.write(commandForPython);
+                console.log(`Sent HF summarize command to Python stdin.`);
+                // Python will print results to stdout, caught by existing listener
+            } catch (error) {
+                console.error('Error writing HF summarize command to Python stdin:', error);
+                mainWindow?.webContents.send('gemini-error', `Error triggering HF summarization: ${error.message}`);
+            }
+        } else {
+             console.warn('Python process not running or stdin closed for HF summarize.');
+             mainWindow?.webContents.send('gemini-error', 'Backend process is not running or input is closed.');
+        }
+        return;
+    }
+
     // --- Handle other commands or normal chat (Pass to gemini_guy.py) ---
     else if (!handledLocally) {
         if (pythonProcess && pythonProcess.stdin && !pythonProcess.stdin.destroyed) {
