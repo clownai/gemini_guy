@@ -451,5 +451,18 @@ document.getElementById('tool-refresh-git-btn')?.addEventListener('click', () =>
 // Trigger initial Git status check
 window.electronAPI.requestGitStatus();
 
+// Hugging Face search button event listener
+document.getElementById('tool-huggingface-btn')?.addEventListener('click', () => {
+    console.log('Hugging Face Search button clicked');
+    const query = prompt("Search Hugging Face Hub for (models):"); // Use simple browser prompt for now
+    if (query && query.trim()) {
+        addInfoMessage(`Searching Hugging Face Hub for "${query}"...`); // User feedback
+        window.electronAPI.triggerHuggingFaceTask({ type: 'search', query: query.trim() });
+    } else if (query !== null) { // Handle empty input vs clicking cancel
+         addErrorMessage("Search query cannot be empty.");
+    }
+     // If user clicks Cancel, prompt returns null, nothing happens.
+});
+
 console.log('Renderer script loaded.');
 addInfoMessage("App Initialized. Waiting for Python backend...");

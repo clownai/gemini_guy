@@ -416,6 +416,27 @@ ipcMain.on('request-github-data', (event, repo) => {
  });
 
 ipcMain.on('trigger-huggingface-task', (event, task) => {
-     console.log(`Main: Received request for Hugging Face task:`, task);
-      event.sender.send('gemini-error', `Hugging Face task '${task?.type}' not implemented yet.`);
- });
+    console.log(`Main: Received request for Hugging Face task:`, task);
+    if (task?.type === 'search' && task?.query) {
+        if (pythonProcess && pythonProcess.stdin && !pythonProcess.stdin.destroyed) {
+            try {
+                // Send the special command prefix + query to the Python backend
+                const commandForPython = `HF_SEARCH:::${task.query}\n`;
+                pythonProcess.stdin.write(commandForPython);
+                console.log(`Sent HF search command for "${task.query}" to Python stdin.`);
+                // Python will now print results directly to stdout,
+                // which are already captured by the existing stdout listener
+                // and sent back to renderer via 'gemini-response' channel.
+            } catch (error) {
+                console.error('Error writing HF search command to Python stdin:', error);
+                mainWindow?.webContents.send('gemini-error', `Error triggering HF search: ${error.message}`);
+            }
+        } else {
+             console.warn('Python process not running or stdin closed for HF search.');
+             mainWindow?.webContents.send('gemini-error', 'Backend process is not running or input is closed.');
+        }
+    } else {
+        console.warn('Invalid or unsupported Hugging Face task received:', task);
+        mainWindow?.webContents.send('gemini-error', `Unsupported HF task: ${task?.type}`);
+    }
+});

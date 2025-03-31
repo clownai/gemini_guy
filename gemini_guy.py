@@ -5,6 +5,7 @@ import google.generativeai as genai
 from datetime import datetime
 from tavily import TavilyClient
 from dotenv import load_dotenv
+from huggingface_hub import HfApi, hf_hub_download
 
 # Load API key from .env file
 def load_api_key():
@@ -23,6 +24,7 @@ try:
     load_dotenv()
     google_api_key = os.getenv("GOOGLE_API_KEY")
     tavily_api_key = os.getenv("TAVILY_API_KEY")
+    huggingface_token = os.getenv("HUGGINGFACE_TOKEN")
     
     if not google_api_key:
         raise ValueError("GOOGLE_API_KEY not found. Check .env file.")
@@ -34,6 +36,11 @@ try:
         print("🔑 Tavily API Key loaded.", file=sys.stderr, flush=True)
     else:
         print("⚠️ Tavily API Key (TAVILY_API_KEY) not found in .env. /search command will be disabled.", file=sys.stderr, flush=True)
+
+    if huggingface_token:
+        print("🔑 Hugging Face Token loaded.", file=sys.stderr, flush=True)
+    else:
+        print("⚠️ Hugging Face Token not found. HF features disabled.", file=sys.stderr, flush=True)
 
 except Exception as e:
     print(f"Configuration error: {e}", file=sys.stderr)
@@ -70,6 +77,28 @@ initial_history = [
 
 # Conversation tracking
 conversation_history = initial_history.copy()
+
+def search_huggingface_hub(query, token):
+    """Searches the Hugging Face Hub for models and returns formatted results."""
+    if not token:
+        return "Error: Hugging Face token not configured in .env file."
+    try:
+        api = HfApi(token=token)
+        # Search models - limited results for simplicity
+        models = api.list_models(search=query, limit=5, sort='downloads', direction=-1)
+        results_str = f"Hugging Face Hub Model Search Results for '{query}':\n\n"
+        if not models:
+            results_str += "No models found matching your query.\n"
+        else:
+            for i, model in enumerate(models):
+                results_str += f"{i+1}. ID: {model.modelId}\n"
+                results_str += f"   Downloads: {getattr(model, 'downloads', 'N/A')}\n" # Use getattr for safety
+                results_str += f"   Last Modified: {getattr(model, 'lastModified', 'N/A')}\n\n"
+        # TODO: Could also search datasets: api.list_datasets(...)
+        return results_str
+    except Exception as e:
+        print(f"Error searching Hugging Face Hub: {e}", file=sys.stderr, flush=True)
+        return f"Error performing Hugging Face search: {e}"
 
 def main():
     # Redirect stderr to avoid potential encoding issues
@@ -146,6 +175,43 @@ def main():
 
                 except Exception as search_e:
                     print(f"\n❌ Error during web search: {search_e}", flush=True)
+                    continue
+
+            # Handle HF search command
+            elif user_input.lower().startswith('/hf_search '):
+                if not huggingface_token:
+                    print("Gemini Guy: Error: HUGGINGFACE_TOKEN not found in .env file. Cannot perform HF search.", flush=True)
+                    continue
+
+                try:
+                    parts = user_input.split(' ', 1)
+                    query = parts[1].strip() if len(parts) > 1 else None
+
+                    if not query:
+                        print("Gemini Guy: Please provide a search query after /hf_search.", flush=True)
+                        continue
+
+                    print(f"Gemini Guy [Searching HF Hub for '{query}']: ", end="", flush=True)
+
+                    # Call HF search function
+                    search_results = search_huggingface_hub(query, huggingface_token)
+                    
+                    # Extract and print the text response
+                    print(search_results)
+                    sys.stdout.flush()
+
+                    # Append to conversation history
+                    conversation_history.append({
+                        'role': 'user',
+                        'parts': [user_input]
+                    })
+                    conversation_history.append({
+                        'role': 'model',
+                        'parts': [search_results]
+                    })
+
+                except Exception as search_e:
+                    print(f"\n❌ Error during HF search: {search_e}", flush=True)
                     continue
 
             # Append user input to conversation history
