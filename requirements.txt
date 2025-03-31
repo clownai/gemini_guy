@@ -3,4 +3,4 @@ python-dotenv==1.0.0
 tavily-python==0.3.3
 huggingface_hub==0.22.2
 transformers==4.40.1
-torch==2.3.0
+torch
