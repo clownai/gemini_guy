@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Guy Chat</title>
+    
+    <!-- Highlight.js CSS (choose a dark theme) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    
+    <style>
+        body {
+            font-family: 'Ubuntu Mono', Consolas, 'Courier New', Courier, monospace;
+            margin: 0;
+            height: 100vh;
+            background-color: #300a24;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #chat-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .message {
+            margin-bottom: 10px;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+
+        .user-message::before {
+            content: "You: ";
+            color: #4ec9b0;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        .gemini-message::before {
+            content: "Gemini Guy: ";
+            color: #cccccc;
+            margin-right: 5px;
+        }
+
+        .error-message {
+            color: #f44336;
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+
+        .info-message {
+            color: #aaa;
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+
+        #input-area {
+            display: flex;
+            padding: 10px;
+            background-color: #2b0a20;
+            border-top: 1px solid #444;
+        }
+
+        #message-input {
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid #555;
+            background-color: #444;
+            color: #ffffff;
+            margin-right: 10px;
+            font-family: inherit;
+            font-size: 1em;
+            caret-color: #4ec9b0; /* Terminal-like cursor color */
+            animation: terminal-cursor 1s infinite; /* Blinking cursor */
+        }
+
+        @keyframes terminal-cursor {
+            0%, 100% { border-right-color: transparent; }
+            50% { border-right-color: #4ec9b0; }
+        }
+
+        #voice-button, #send-button {
+            padding: 8px 12px;
+            background-color: #555;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 1em;
+        }
+
+        #voice-button {
+            margin-right: 5px;
+        }
+
+        #voice-button:hover, #send-button:hover {
+            background-color: #666;
+        }
+
+        /* Add styles for code blocks and copy button */
+        pre code.hljs { /* Style the container */
+            display: block;
+            overflow-x: auto;
+            padding: 0.8em;
+            background: #282c34; /* Match HLJS theme background */
+            color: #abb2bf; /* Default text for theme */
+            margin-top: 5px;
+            margin-bottom: 5px;
+            border: 1px solid #444; /* Subtle border */
+        }
+        .code-block-wrapper { /* Add a wrapper for positioning */
+            position: relative;
+            margin-top: 5px;
+            margin-bottom: 10px;
+        }
+        .copy-code-button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: #666;
+            color: #fff;
+            border: none;
+            padding: 3px 6px;
+            font-size: 0.75em;
+            cursor: pointer;
+            opacity: 0; /* Hidden by default */
+            transition: opacity 0.2s ease-in-out;
+            border-radius: 3px;
+        }
+        .code-block-wrapper:hover .copy-code-button {
+            opacity: 1; /* Show on hover */
+        }
+        .copy-code-button:active {
+             background-color: #777;
+        }
+
+        #status-bar {
+            background-color: #2b0a20; /* Match input area */
+            color: #a0a0a0;
+            padding: 3px 10px; /* Small padding */
+            font-size: 0.75em; /* Small text */
+            border-top: 1px solid #444;
+            flex-shrink: 0; /* Prevent shrinking */
+            text-align: right; /* Align text to the right */
+        }
+        #status-bar span {
+            margin-left: 15px; /* Space out status items if more are added */
+        }
+        .status-bar-button { /* Style for the Initialize Git button */
+            background: #555;
+            border: none;
+            color: #fff;
+            margin-left: 5px;
+            padding: 1px 4px;
+            font-size: 0.9em; /* slightly smaller than status text */
+            cursor: pointer;
+        }
+        .status-bar-button:hover {
+            background: #666;
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-container">
+        <!-- Chat messages will be appended here -->
+    </div>
+    <div id="input-area">
+        <input type="text" id="message-input" placeholder="Type your message or use mic...">
+        <button id="voice-button">🎤</button>
+        <button id="send-button">Send</button>
+    </div>
+
+    <!-- Status Bar -->
+    <div id="status-bar">
+        <span id="git-branch-status">Git: (Initializing...)</span>
+    </div>
+
+    <!-- Highlight.js JS (should be after body or use defer) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="./renderer.js"></script>
+</body>
+</html>
