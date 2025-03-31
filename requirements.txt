@@ -4,3 +4,4 @@ tavily-python
 huggingface_hub
 transformers
 torch
+requests
